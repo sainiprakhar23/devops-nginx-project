@@ -11,8 +11,11 @@ environment {
     // Docker image name
     IMAGE_NAME = 'nginx-devops'
 
-    // Jenkins build number becomes image tag
+    // Jenkins build number used as image tag
     IMAGE_TAG = "${BUILD_NUMBER}"
+
+    // Minikube kubeconfig location
+    KUBECONFIG = 'C:\\Users\\saini\\.kube\\config'
 }
 
 stages {
@@ -77,11 +80,24 @@ stages {
         }
     }
 
+    stage('Kubernetes Debug') {
+
+        steps {
+
+            bat '''
+            set KUBECONFIG=C:\\Users\\saini\\.kube\\config
+            kubectl get nodes
+            '''
+
+        }
+    }
+
     stage('Deploy To Kubernetes') {
 
         steps {
 
             bat '''
+            set KUBECONFIG=C:\\Users\\saini\\.kube\\config
             kubectl set image deployment/nginx-deployment nginx=%DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG%
             '''
 
@@ -93,6 +109,7 @@ stages {
         steps {
 
             bat '''
+            set KUBECONFIG=C:\\Users\\saini\\.kube\\config
             kubectl rollout status deployment/nginx-deployment
             '''
 
@@ -114,5 +131,6 @@ post {
 
     }
 }
+
 
 }
