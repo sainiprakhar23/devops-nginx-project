@@ -1,0 +1,29 @@
+# API version of Service resource
+apiVersion: v1
+
+# Resource type
+kind: Service
+
+metadata:
+  # Service name
+  name: nginx-service
+
+spec:
+
+  # Service forwards traffic to pods having this label
+  selector:
+    app: nginx
+
+  # Expose service outside cluster
+  type: NodePort
+
+  ports:
+
+  # Service Port
+  - port: 80
+
+    # Pod Port
+    targetPort: 80
+
+    # External Node Port
+    nodePort: 30080
