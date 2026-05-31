@@ -1,64 +1,108 @@
-// Declarative Pipeline Syntax
 pipeline {
 
-    // Run pipeline on any available Jenkins agent/node
-    agent any
+```
+agent any
 
-    stages {
+environment {
 
-        // Stage 1: Verify Jenkins successfully executed the pipeline
-        stage('Git Check') {
+    // Docker Hub username
+    DOCKER_USER = 'sainiprakhar23'
 
-            steps {
+    // Image name
+    IMAGE_NAME = 'nginx-devops'
 
-                // Print message in Jenkins Console Output
-                echo 'GitHub connected successfully'
+}
 
-            }
+stages {
+
+    stage('Git Check') {
+
+        steps {
+
+            echo 'GitHub connected successfully'
+
         }
+    }
 
-        // Stage 2: Verify Jenkins can access Docker
-        stage('Docker Check') {
+    stage('Docker Check') {
 
-            steps {
+        steps {
 
-                // Run Windows command and show Docker version
-                bat 'docker --version'
+            bat 'docker --version'
 
-            }
         }
+    }
 
-        // Stage 3: Build Docker Image
-        stage('Build Docker Image') {
+    stage('Build Docker Image') {
 
-            steps {
+        steps {
 
-                // Build image using Dockerfile present in repository root
-                // -t = tag
-                // nginx-devops = image name
-                // v1 = image version/tag
-                // . = current directory (contains Dockerfile)
-                bat 'docker build -t nginx-devops:v1 .'
+            // Build image locally on Jenkins machine
+            bat 'docker build -t nginx-devops:v1 .'
+
+        }
+    }
+
+    stage('Docker Login') {
+
+        steps {
+
+            // Read credentials from Jenkins Credentials Store
+            withCredentials([
+                usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )
+            ]) {
+
+                bat '''
+                echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                '''
 
             }
         }
     }
 
-    // Actions after pipeline completion
-    post {
+    stage('Tag Docker Image') {
 
-        // Executed only when all stages succeed
-        success {
+        steps {
 
-            echo 'Docker Image Built Successfully'
-
-        }
-
-        // Executed if any stage fails
-        failure {
-
-            echo 'Pipeline Failed'
+            bat '''
+            docker tag nginx-devops:v1 sainiprakhar23/nginx-devops:v1
+            '''
 
         }
     }
+
+    stage('Push Docker Image') {
+
+        steps {
+
+            bat '''
+            docker push sainiprakhar23/nginx-devops:v1
+            '''
+
+        }
+    }
+
+}
+
+post {
+
+    success {
+
+        echo 'Docker Image Built And Pushed Successfully'
+
+    }
+
+    failure {
+
+        echo 'Pipeline Failed'
+
+    }
+
+}
+```
+
 }
