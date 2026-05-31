@@ -10,6 +10,9 @@ environment {
 
     // Docker image name
     IMAGE_NAME = 'nginx-devops'
+
+    // Jenkins build number becomes image tag
+    IMAGE_TAG = "${BUILD_NUMBER}"
 }
 
 stages {
@@ -36,8 +39,9 @@ stages {
 
         steps {
 
-            // Build Docker image from Dockerfile
-            bat 'docker build -t nginx-devops:v1 .'
+            bat '''
+            docker build -t %DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG% .
+            '''
 
         }
     }
@@ -54,7 +58,6 @@ stages {
                 )
             ]) {
 
-                // Login to Docker Hub using Jenkins credentials
                 bat '''
                 docker login -u "%DOCKER_USERNAME%" -p "%DOCKER_PASSWORD%"
                 '''
@@ -63,25 +66,34 @@ stages {
         }
     }
 
-    stage('Tag Docker Image') {
+    stage('Push Docker Image') {
 
         steps {
 
-            // Tag local image for Docker Hub
             bat '''
-            docker tag nginx-devops:v1 sainiprakhar23/nginx-devops:v1
+            docker push %DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG%
             '''
 
         }
     }
 
-    stage('Push Docker Image') {
+    stage('Deploy To Kubernetes') {
 
         steps {
 
-            // Push image to Docker Hub
             bat '''
-            docker push sainiprakhar23/nginx-devops:v1
+            kubectl set image deployment/nginx-deployment nginx=%DOCKER_USER%/%IMAGE_NAME%:%IMAGE_TAG%
+            '''
+
+        }
+    }
+
+    stage('Wait For Rollout') {
+
+        steps {
+
+            bat '''
+            kubectl rollout status deployment/nginx-deployment
             '''
 
         }
@@ -92,7 +104,7 @@ post {
 
     success {
 
-        echo 'Docker Image Built And Pushed Successfully'
+        echo 'CI/CD Pipeline Completed Successfully'
 
     }
 
@@ -102,6 +114,5 @@ post {
 
     }
 }
-
 
 }
