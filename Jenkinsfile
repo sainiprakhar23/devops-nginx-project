@@ -8,9 +8,8 @@ environment {
     // Docker Hub username
     DOCKER_USER = 'sainiprakhar23'
 
-    // Image name
+    // Docker image name
     IMAGE_NAME = 'nginx-devops'
-
 }
 
 stages {
@@ -37,7 +36,7 @@ stages {
 
         steps {
 
-            // Build image locally on Jenkins machine
+            // Build Docker image from Dockerfile
             bat 'docker build -t nginx-devops:v1 .'
 
         }
@@ -47,7 +46,6 @@ stages {
 
         steps {
 
-            // Read credentials from Jenkins Credentials Store
             withCredentials([
                 usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -56,8 +54,9 @@ stages {
                 )
             ]) {
 
+                // Login to Docker Hub using Jenkins credentials
                 bat '''
-                echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                docker login -u "%DOCKER_USERNAME%" -p "%DOCKER_PASSWORD%"
                 '''
 
             }
@@ -68,6 +67,7 @@ stages {
 
         steps {
 
+            // Tag local image for Docker Hub
             bat '''
             docker tag nginx-devops:v1 sainiprakhar23/nginx-devops:v1
             '''
@@ -79,13 +79,13 @@ stages {
 
         steps {
 
+            // Push image to Docker Hub
             bat '''
             docker push sainiprakhar23/nginx-devops:v1
             '''
 
         }
     }
-
 }
 
 post {
@@ -101,7 +101,6 @@ post {
         echo 'Pipeline Failed'
 
     }
-
 }
 
 
